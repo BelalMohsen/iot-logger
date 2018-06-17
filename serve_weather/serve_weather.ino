@@ -1,8 +1,6 @@
 // Released under an MIT license.
 
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
-#include <DHT_U.h>
+#include "DHT.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <stdlib.h>
@@ -13,12 +11,11 @@
 #define DHTTYPE           DHT11     // DHT 11 
 const int LED_PIN = 5;
 
-DHT_Unified dht(DHTPIN, DHTTYPE);
+DHT dht(DHTPIN, DHTTYPE);
 WiFiServer server(80);
 
-uint32_t delayMS;
-const char WiFiSSID[] = "WiFiSSID";
-const char WiFiPSK[] = "WiFiPSK";
+const char WiFiSSID[] = "SSID";
+const char WiFiPSK[] = "PSK";
 float temp = 0;
 float humid = 0;
 char buff[10];
@@ -35,13 +32,24 @@ void setup() {
   
   // Initialize sensor.
   dht.begin();
-  sensor_t sensor;
   // Set delay between sensor readings based on sensor details.
-  delayMS = sensor.min_delay / 1000;
 
 }
 
 void loop() {
+  delay(2000);
+
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float humid = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float temp = dht.readTemperature();
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(humid) || isnan(temp)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
   // Check if a client has connected
   WiFiClient client = server.available();
   if (!client) {
@@ -56,33 +64,16 @@ void loop() {
   // Match the request
   int val = -1; // We'll use 'val' to keep track of both the
                 // request type (read/set) and value if set.
-  if (req.indexOf("/weather") != -1)
+  if (req.indexOf("/weather") != -1){
     val = 1;
+    Serial.println("getting weather data");
+  }
     
   // Set GPIO5 according to the request
   if (val >= 0){
+    Serial.println("inside sensor loop");
     digitalWrite(LED_PIN, HIGH);
-
     // Delay between measurements.
-    delay(delayMS);
-    // Get temperature event and print its value.
-    sensors_event_t event;  
-    dht.temperature().getEvent(&event);
-    if (isnan(event.temperature)) {
-      temp = -1;
-    }
-    else {
-      temp = event.temperature;
-    }
-    
-    // Get humidity event and print its value.
-    dht.humidity().getEvent(&event);
-    if (isnan(event.relative_humidity)) {
-      humid = -1;
-    }
-    else {
-      humid = event.relative_humidity;
-    }
   }
   else {
     digitalWrite(LED_PIN, LOW);
@@ -97,6 +88,7 @@ void loop() {
   // If we're setting the LED, print out a message saying we did
   if (val == 1)
   {
+    Serial.println("inside page creation");
     s += "<p>";
     s += dtostrf(temp, 4, 6, buff);
     s += ", ";
@@ -105,7 +97,8 @@ void loop() {
   }
   else
   {
-    s += "Invalid Request.<br> Try /led/1, /led/0, or /read.";
+    Serial.println("inside wrong page creation");
+    s += "Invalid Request.<br> Try /weather.";
   }
   s += "</body>\r\n</html>\n";
 
@@ -164,6 +157,7 @@ void setupMDNS()
       delay(1000);
     }
   }
+  MDNS.addService("http", "tcp", 80);
   Serial.println("mDNS responder started");
 
 }
