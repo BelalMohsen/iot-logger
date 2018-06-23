@@ -33,8 +33,8 @@ def search_resp_for_weather(resp):
 	if resp is not None:
 		html = BeautifulSoup(resp, 'html.parser')
 		temp_and_hum = html.p.string.replace(' ', '').split(',')
-		temp_and_hum[0] = int(float(temp_and_hum[0]))
-		temp_and_hum[1] = int(float(temp_and_hum[1]))
+		temp_and_hum[0] = int(temp_and_hum[0])
+		temp_and_hum[1] = int(temp_and_hum[1])
 
 		return temp_and_hum
 

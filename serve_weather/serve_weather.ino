@@ -16,9 +16,6 @@ WiFiServer server(80);
 
 const char WiFiSSID[] = "SSID";
 const char WiFiPSK[] = "PSK";
-float temp = 0;
-float humid = 0;
-char buff[10];
 
 void setup() {
   Serial.begin(9600);
@@ -32,24 +29,11 @@ void setup() {
   
   // Initialize sensor.
   dht.begin();
-  // Set delay between sensor readings based on sensor details.
 
 }
 
 void loop() {
-  delay(2000);
 
-  // Reading temperature or humidity takes about 250 milliseconds!
-  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  float humid = dht.readHumidity();
-  // Read temperature as Celsius (the default)
-  float temp = dht.readTemperature();
-
-  // Check if any reads failed and exit early (to try again).
-  if (isnan(humid) || isnan(temp)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return;
-  }
   // Check if a client has connected
   WiFiClient client = server.available();
   if (!client) {
@@ -64,6 +48,7 @@ void loop() {
   // Match the request
   int val = -1; // We'll use 'val' to keep track of both the
                 // request type (read/set) and value if set.
+                
   if (req.indexOf("/weather") != -1){
     val = 1;
     Serial.println("getting weather data");
@@ -81,7 +66,7 @@ void loop() {
 
   client.flush();
 
-  // Prepare the response. Start with the common header:
+  // Prepare the response
   String s = "HTTP/1.1 200 OK\r\n";
   s += "Content-Type: text/html\r\n\r\n";
   s += "<!DOCTYPE HTML>\r\n<html>\r\n<body>\r\n";
@@ -89,11 +74,11 @@ void loop() {
   if (val == 1)
   {
     Serial.println("inside page creation");
-    s += "<p>";
-    s += dtostrf(temp, 4, 6, buff);
-    s += ", ";
-    s += dtostrf(humid, 4, 6, buff);
-    s += "</p>\r\n";
+    s += "<p>{\"temp\":";
+    s += String(dht.readTemperature());
+    s += ",\"humid\":";
+    s += String(dht.readHumidity());//dtostrf(humid, 4, 6, buff);
+    s += "}</p>\r\n";
   }
   else
   {
